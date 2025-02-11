@@ -58,4 +58,4 @@ logic-solver [FLAGS] <expression>
 - `-s`, `--simplify`: Display the simplified expression.
 - `-t`, `--table`: Display the truth table.
 - `-h`, `--help`: Prints help information.
-- `-v`, `--version`: Prints version information.  
+- `-V`, `--version`: Prints version information.  

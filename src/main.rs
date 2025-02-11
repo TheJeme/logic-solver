@@ -1,5 +1,8 @@
-use clap::Parser;
 use std::collections::{HashMap, HashSet};
+
+//
+// TOKENIZATION SECTION
+//
 
 #[derive(Debug, Clone)]
 enum Token {
@@ -15,7 +18,7 @@ enum Token {
 }
 
 /// Tokenizes the input string and returns a list of tokens.
-/// Any errors are returned as an Err value.
+/// Returns an error if an unexpected token is encountered.
 fn tokenize(input: &str) -> Result<Vec<Token>, String> {
     let mut tokens = Vec::new();
     let mut s = input;
@@ -36,7 +39,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                 return Err("Unterminated quoted string".to_string());
             }
         }
-        // CONST_TRUE: "T" (check that the next character is not part of the identifier)
+        // CONST_TRUE: "T" (ensure next character is not part of the identifier)
         if s.starts_with("T") {
             if s.len() == 1 || {
                 let c = s.chars().nth(1).unwrap();
@@ -47,7 +50,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                 continue;
             }
         }
-        // CONST_FALSE: "F" (check that the next character is not part of the identifier)
+        // CONST_FALSE: "F"
         if s.starts_with("F") {
             if s.len() == 1 || {
                 let c = s.chars().nth(1).unwrap();
@@ -58,7 +61,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                 continue;
             }
         }
-        // NOT operator: "not" (case-insensitive) as well as "!" and "¬"
+        // NOT operator: "not" (case-insensitive), "!" or "¬"
         if s.len() >= 3 && s[..3].eq_ignore_ascii_case("not") {
             if s.len() == 3 || {
                 let c = s.chars().nth(3).unwrap();
@@ -79,7 +82,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>, String> {
             s = &s['¬'.len_utf8()..];
             continue;
         }
-        // AND operator: "and" (case-insensitive) as well as "&&" and "∧"
+        // AND operator: "and" (case-insensitive), "&&" or "∧"
         if s.len() >= 3 && s[..3].eq_ignore_ascii_case("and") {
             if s.len() == 3 || {
                 let c = s.chars().nth(3).unwrap();
@@ -100,7 +103,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>, String> {
             s = &s['∧'.len_utf8()..];
             continue;
         }
-        // OR operator: "or" (case-insensitive) as well as "||" and "∨"
+        // OR operator: "or" (case-insensitive), "||" or "∨"
         if s.len() >= 2 && s[..2].eq_ignore_ascii_case("or") {
             if s.len() == 2 || {
                 let c = s.chars().nth(2).unwrap();
@@ -132,7 +135,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>, String> {
             s = &s[1..];
             continue;
         }
-        // VARIABLE: starts with a letter or underscore, continues with alphanumeric characters
+        // VARIABLE: starts with a letter or underscore and continues with alphanumerics/underscores
         if let Some(ch) = s.chars().next() {
             if ch.is_alphabetic() || ch == '_' {
                 let mut len = 0;
@@ -154,9 +157,9 @@ fn tokenize(input: &str) -> Result<Vec<Token>, String> {
     Ok(tokens)
 }
 
-// ──────────────────────────────────────────────────
-// PARSER SECTION
-// ──────────────────────────────────────────────────
+//
+// PARSER SECTION (Recursive, renamed to ExprParser)
+//
 
 #[derive(Debug, Clone)]
 enum AST {
@@ -241,7 +244,7 @@ impl ExprParser {
                     )),
                 }
             }
-            Some(Token::Variable(_name)) => {
+            Some(Token::Variable(_)) => {
                 let token = self.consume_token().unwrap();
                 if let Token::Variable(n) = token {
                     Ok(AST::Variable(n))
@@ -249,7 +252,7 @@ impl ExprParser {
                     unreachable!()
                 }
             }
-            Some(Token::ComplexVariable(_name)) => {
+            Some(Token::ComplexVariable(_)) => {
                 let token = self.consume_token().unwrap();
                 if let Token::ComplexVariable(n) = token {
                     // Convert complex variable to a simple variable
@@ -271,9 +274,9 @@ impl ExprParser {
     }
 }
 
-// ──────────────────────────────────────────────────
+//
 // AST Evaluation and Variable Extraction
-// ──────────────────────────────────────────────────
+//
 
 /// Evaluates the AST using the given environment (mapping variable names to booleans).
 fn eval_ast(ast: &AST, env: &HashMap<String, bool>) -> Result<bool, String> {
@@ -311,9 +314,9 @@ fn get_variables(ast: &AST) -> Vec<String> {
     vars
 }
 
-// ──────────────────────────────────────────────────
+//
 // QUINE–MCCLUSKEY ALGORITHM
-// ──────────────────────────────────────────────────
+//
 
 /// Converts a number to a binary string with the specified width.
 fn to_binary_string(num: usize, width: usize) -> String {
@@ -341,14 +344,14 @@ fn combine_terms(t1: &str, t2: &str) -> Option<String> {
     }
 }
 
-/// Quine–McCluskey algorithm: returns the prime implicants for the given minterm values.
+/// Struct representing a prime implicant.
 #[derive(Debug, Clone)]
 struct PrimeImplicant {
     term: String,
     minterms: Vec<usize>,
 }
 
-/// Returns the prime implicants for the given minterm values.
+/// Quine–McCluskey algorithm: returns the prime implicants for the given minterm values.
 fn quine_mccluskey(minterms: &[usize], num_vars: usize) -> Vec<PrimeImplicant> {
     // Initial terms: each minterm as a binary string
     let mut current_terms: Vec<PrimeImplicant> = minterms
@@ -372,11 +375,11 @@ fn quine_mccluskey(minterms: &[usize], num_vars: usize) -> Vec<PrimeImplicant> {
                 .push(term.clone());
         }
         let mut new_terms = Vec::new();
-        // Use the sorted group keys
+        // Use sorted group keys
         let mut group_keys: Vec<usize> = groups.keys().cloned().collect();
         group_keys.sort();
 
-        // Array to mark which terms have been combined
+        // Mark terms that are combined using a separate vector
         let mut used = vec![false; current_terms.len()];
         for i in 0..group_keys.len().saturating_sub(1) {
             let group1 = groups.get(&group_keys[i]).unwrap();
@@ -430,7 +433,7 @@ fn quine_mccluskey(minterms: &[usize], num_vars: usize) -> Vec<PrimeImplicant> {
     prime_implicants
 }
 
-/// Returns whether a term covers the given minterm, by comparing its binary representation.
+/// Returns whether a term covers the given minterm (by comparing its binary representation).
 fn term_covers(term: &str, minterm: usize, num_vars: usize) -> bool {
     let m_bin = to_binary_string(minterm, num_vars);
     for (c_term, c_bin) in term.chars().zip(m_bin.chars()) {
@@ -442,7 +445,7 @@ fn term_covers(term: &str, minterm: usize, num_vars: usize) -> bool {
 }
 
 /// Selects the essential prime implicants that cover all minterms.
-/// If there are remaining minterms, a brute-force search is performed to find the minimal cover.
+/// A brute-force search is performed to find a minimal cover for any remaining minterms.
 fn find_essential_prime_implicants(
     prime_implicants: &[PrimeImplicant],
     minterms: &[usize],
@@ -544,9 +547,9 @@ fn implicants_to_expression(implicants: Vec<PrimeImplicant>, var_list: &[String]
     parts.join(" || ")
 }
 
-// ──────────────────────────────────────────────────
+//
 // SIMPLIFICATION AND TRUTH TABLE GENERATION
-// ──────────────────────────────────────────────────
+//
 
 struct SimplificationResult {
     simplified: String,
@@ -554,7 +557,7 @@ struct SimplificationResult {
     var_list: Vec<String>,
 }
 
-/// Simplifies the Boolean expression: builds the truth table and performs Quine–McCluskey minimization.
+/// Simplifies the Boolean expression by building a truth table and performing Quine–McCluskey minimization.
 fn simplify_boolean_expression(ast: &AST) -> Result<SimplificationResult, String> {
     let var_list = get_variables(ast);
     let num_vars = var_list.len();
@@ -591,63 +594,76 @@ fn simplify_boolean_expression(ast: &AST) -> Result<SimplificationResult, String
     })
 }
 
-#[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
-struct Args {
-    #[clap(short, long, default_value = "both", possible_values = &["both", "simplified", "truth"])]
-    output: String,
-    expression: Vec<String>,
-}
+//
+// IMPROVED TRUTH TABLE PRINTING
+//
 
-/// Prints the truth table in a formatted manner.
+/// Prints the truth table with improved spacing by dynamically computing column widths.
 fn print_truth_table(var_list: &[String], truth_table: &[(HashMap<String, bool>, bool)]) {
-    // Padding to add extra space in each column.
+    // Extra padding for each column.
     let padding = 4;
-
-    // Compute each variable column's width:
-    // Use the length of the variable name (or 1, whichever is larger) plus the extra padding.
+    // Compute widths for each variable column.
     let widths: Vec<usize> = var_list
         .iter()
         .map(|var| var.len().max(1) + padding)
         .collect();
-
-    // Compute the width for the "Result" column similarly.
+    // Compute width for the "Result" column.
     let result_header = "Result";
     let result_width = result_header.len().max(1) + padding;
 
     // Print the header row.
     for (i, var) in var_list.iter().enumerate() {
-        print!("| {:^width$} ", var, width = widths[i]);
+        print!("│ {:^width$} ", var, width = widths[i]);
     }
-    print!("| {:^width$} |", result_header, width = result_width);
+    print!("│ {:^width$} │", result_header, width = result_width);
     println!();
 
     // Print the separator row.
     for width in &widths {
-        // The separator cell is drawn with '-' characters.
-        print!("+{:-^w$}", "", w = *width + 2);
+        print!("┼{:─^w$}", "", w = *width + 2);
     }
-    print!("+{:-^w$}+", "", w = result_width + 2);
+    print!("┼{:─^w$}┼", "", w = result_width + 2);
     println!();
 
     // Print each data row.
     for (env, res) in truth_table {
         for (i, var) in var_list.iter().enumerate() {
             let val = if *env.get(var).unwrap() { "T" } else { "F" };
-            print!("| {:^width$} ", val, width = widths[i]);
+            print!("│ {:^width$} ", val, width = widths[i]);
         }
         let res_str = if *res { "T" } else { "F" };
-        print!("| {:^width$} |", res_str, width = result_width);
+        print!("│ {:^width$} │", res_str, width = result_width);
         println!();
     }
 }
 
-// ──────────────────────────────────────────────────
+//
+// COMMAND-LINE INTERFACE (Clap)
+//
+
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Display the simplified expression.
+    #[clap(short = 's', long = "simplify")]
+    simplify: bool,
+
+    /// Display the truth table.
+    #[clap(short = 't', long = "table")]
+    table: bool,
+
+    /// Boolean expression (e.g., a or b && c). If the expression contains spaces, use quotes.
+    expression: Vec<String>,
+}
+
+//
 // MAIN FUNCTION
-// ──────────────────────────────────────────────────
+//
 
 fn main() {
-    // Clap's Parser trait is in scope, so Args::parse() works correctly.
+    // Clap automatically provides help and version info.
     let args = Args::parse();
 
     if args.expression.is_empty() {
@@ -659,22 +675,32 @@ fn main() {
         Ok(tokens) => {
             let mut parser = ExprParser::new(tokens);
             match parser.parse_expression() {
-                Ok(ast) => match simplify_boolean_expression(&ast) {
-                    Ok(result) => {
-                        if args.output == "both" || args.output == "simplified" {
-                            println!("Simplified expression:");
-                            println!("{}", result.simplified);
+                Ok(ast) => {
+                    match simplify_boolean_expression(&ast) {
+                        Ok(result) => {
+                            // If neither flag is set, display both.
+                            if !args.simplify && !args.table {
+                                println!("Simplified expression:");
+                                println!("{}", result.simplified);
+                                println!("\nTruth Table:");
+                                print_truth_table(&result.var_list, &result.truth_table);
+                            } else {
+                                if args.simplify {
+                                    println!("Simplified expression:");
+                                    println!("{}", result.simplified);
+                                }
+                                if args.table {
+                                    println!("Truth Table:");
+                                    print_truth_table(&result.var_list, &result.truth_table);
+                                }
+                            }
                         }
-                        if args.output == "both" || args.output == "truth" {
-                            println!("\nTruth Table:");
-                            print_truth_table(&result.var_list, &result.truth_table);
+                        Err(e) => {
+                            eprintln!("Simplification error: {}", e);
+                            std::process::exit(1);
                         }
                     }
-                    Err(e) => {
-                        eprintln!("Simplification error: {}", e);
-                        std::process::exit(1);
-                    }
-                },
+                }
                 Err(e) => {
                     eprintln!("Parsing error: {}", e);
                     std::process::exit(1);
