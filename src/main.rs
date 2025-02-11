@@ -606,50 +606,50 @@ fn print_truth_table(var_list: &[String], truth_table: &[(HashMap<String, bool>,
     // Compute widths for each variable column.
     let widths: Vec<usize> = var_list
         .iter()
-        .map(|var| var.len().max(1) + padding)
+        .map(|var| var.len().max(1) + padding * 2)
         .collect();
     // Compute width for the "Result" column.
     let result_header = "Result";
-    let result_width = result_header.len().max(1) + padding;
+    let result_width = result_header.len().max(1) + padding * 2;
 
     // Print the top border row.
     print!("┌");
     for (i, width) in widths.iter().enumerate() {
         if i == 0 {
-            print!("{:─^w$}", "", w = *width + 2);
+            print!("{:─^w$}", "", w = *width);
         } else {
-            print!("┬{:─^w$}", "", w = *width + 2);
+            print!("┬{:─^w$}", "", w = *width);
         }
     }
-    print!("┬{:─^w$}┐", "", w = result_width + 2);
+    print!("┬{:─^w$}┐", "", w = result_width);
     println!();
 
     // Print the header row.
     for (i, var) in var_list.iter().enumerate() {
-        print!("│ {:^width$} ", var, width = widths[i]);
+        print!("│{:^width$}", var, width = widths[i]);
     }
-    print!("│ {:^w$} │", result_header, w = result_width);
+    print!("│{:^w$}│", result_header, w = result_width);
     println!();
 
     // Print the separator row.
     for (i, width) in widths.iter().enumerate() {
         if i == 0 {
-            print!("├{:─^w$}", "", w = *width + 2);
+            print!("├{:─^w$}", "", w = *width);
         } else {
-            print!("┼{:─^w$}", "", w = *width + 2);
+            print!("┼{:─^w$}", "", w = *width);
         }
     }
-    print!("┼{:─^w$}┤", "", w = result_width + 2);
+    print!("┼{:─^w$}┤", "", w = result_width);
     println!();
 
     // Print each data row.
     for (env, res) in truth_table {
         for (i, var) in var_list.iter().enumerate() {
             let val = if *env.get(var).unwrap() { "T" } else { "F" };
-            print!("│ {:^width$} ", val, width = widths[i]);
+            print!("│{:^width$}", val, width = widths[i]);
         }
         let res_str = if *res { "T" } else { "F" };
-        print!("│ {:^width$} │", res_str, width = result_width);
+        print!("│{:^width$}│", res_str, width = result_width);
         println!();
     }
 
@@ -657,12 +657,12 @@ fn print_truth_table(var_list: &[String], truth_table: &[(HashMap<String, bool>,
     print!("└");
     for (i, width) in widths.iter().enumerate() {
         if i == 0 {
-            print!("{:─^w$}", "", w = *width + 2);
+            print!("{:─^w$}", "", w = *width);
         } else {
-            print!("┴{:─^w$}", "", w = *width + 2);
+            print!("┴{:─^w$}", "", w = *width);
         }
     }
-    print!("┴{:─^w$}┘", "", w = result_width + 2);
+    print!("┴{:─^w$}┘", "", w = result_width);
 }
 
 //
