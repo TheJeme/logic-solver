@@ -1,3 +1,4 @@
+use clap::Parser;
 use std::collections::{HashMap, HashSet};
 
 //
@@ -640,8 +641,6 @@ fn print_truth_table(var_list: &[String], truth_table: &[(HashMap<String, bool>,
 //
 // COMMAND-LINE INTERFACE (Clap)
 //
-
-use clap::Parser;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
