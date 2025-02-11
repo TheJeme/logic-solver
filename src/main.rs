@@ -602,7 +602,7 @@ fn simplify_boolean_expression(ast: &AST) -> Result<SimplificationResult, String
 /// Prints the truth table with improved spacing by dynamically computing column widths.
 fn print_truth_table(var_list: &[String], truth_table: &[(HashMap<String, bool>, bool)]) {
     // Extra padding for each column.
-    let padding = 4;
+    let padding = 2;
     // Compute widths for each variable column.
     let widths: Vec<usize> = var_list
         .iter()
